@@ -1,11 +1,11 @@
-const _cheerio = require( 'cheerio' )
-const _dasu = require( 'dasu' )
-const _parallel = require( 'async.parallel' )
+const _cheerio = require('cheerio')
+const _dasu = require('dasu')
+const _parallel = require('async.parallel')
 
-const _url = require( 'url' )
+const _url = require('url')
 
 // used to escape query strings
-const _querystring = require( 'querystring' )
+const _querystring = require('querystring')
 
 const YT_SEARCH_QUERY_URI = (
   'https://www.youtube.com/results?' +
@@ -25,28 +25,25 @@ const DEFAULT_OPTS = {
 /**
  * Exports
  **/
-module.exports = function ( query, callback ) {
-  search( query, callback )
+module.exports = function (query) {
+  search(query)
 }
-module.exports.search = search
 
 /**
  * Main
  */
-function search ( query, callback )
+function search (query)
 {
-  let opts = Object.assign( {}, DEFAULT_OPTS )
+  let opts = Object.assign({}, DEFAULT_OPTS)
 
-  if ( !query ) {
-    return callback(
-      new Error( 'No query given.' )
-    )
+  if (!query) {
+    return new Error('No query given.')
   }
 
-  if ( typeof query === 'string' ) {
-    opts = Object.assign( opts, { query: query } )
+  if (typeof query === 'string') {
+    opts = Object.assign(opts, { query: query })
   } else {
-    opts = Object.assign( opts, query )
+    opts = Object.assign(opts, query)
   }
 
   query = opts.query || opts.search
@@ -54,19 +51,19 @@ function search ( query, callback )
   next()
 
   function next () {
-    const q = _querystring.escape( query ).split( /\s+/ )
-    const uri = YT_SEARCH_QUERY_URI + q.join( '+' )
+    const q = _querystring.escape(query).split( /\s+/ )
+    const uri = YT_SEARCH_QUERY_URI + q.join('+')
 
     const tasks = []
-    for ( let i = opts.pageStart; i < opts.pageEnd; i++ ) {
+    for (let i = opts.pageStart; i < opts.pageEnd; i++) {
       const pageNumber = i
       tasks.push(
-        function task ( taskDone ) {
-          findVideos( uri, pageNumber, function ( err, videos ) {
-            if ( err ) {
-              taskDone( err )
+        function task (taskDone) {
+          findVideos(uri, pageNumber, function (err, videos) {
+            if (err) {
+              taskDone(err)
             } else {
-              taskDone( null, videos )
+              taskDone(null, videos)
             }
           } )
         }
@@ -75,9 +72,9 @@ function search ( query, callback )
 
     _parallel(
       tasks,
-      function ( err, results ) {
-        if ( err ) {
-          callback( err )
+      function (err, results) {
+        if (err) {
+          return err;
         } else {
           // merge results
           results = [].concat.apply( [], results )
@@ -86,11 +83,11 @@ function search ( query, callback )
           const playlists = results.filter( playlistFilter )
           const accounts = results.filter( accountFilter )
 
-          callback( null, {
+          return {
             videos: videos,
             playlists: playlists,
             accounts: accounts
-          } )
+          }
         }
       }
     )
@@ -115,24 +112,24 @@ function findVideos ( uri, page, callback )
 function videoFilter ( result )
 {
   return (
-    result.url.indexOf( 'watch' ) >= 0 &&
-    result.url.indexOf( '&list' ) === -1 &&
-    result.url.indexOf( '&user' ) === -1
+    result.url.indexOf('watch') >= 0 &&
+    result.url.indexOf('&list') === -1 &&
+    result.url.indexOf('&user') === -1
   )
 }
 
-function playlistFilter ( result )
+function playlistFilter (result)
 {
-  return result.url.indexOf( 'list' ) >= 0
+  return result.url.indexOf('list') >= 0
 }
 
-function accountFilter ( result )
+function accountFilter (result)
 {
-  return result.url.indexOf( 'user' ) >= 0
+  return result.url.indexOf('user') >= 0
 }
 
 // parse the plain text response body with jsom to pin point song information
-function parseResponse ( responseText, callback )
+function parseResponse (responseText, callback)
 {
   // var _time = Date.now();
   const $ = _cheerio.load( responseText )
@@ -198,14 +195,14 @@ function parseResponse ( responseText, callback )
       }
     }
 
-    // console.log( '"' + song.title + '" views: ' + song.views )
+    // console.log('"' + song.title + '" views: ' + song.views)
 
-    songs.push( song )
+    songs.push(song)
   };
 
   // console.log(songs[0]);
 
-  callback( null, songs )
+  return songs;
 }
 
 function parseDuration ( timestampText )
